@@ -240,34 +240,43 @@ class MainWindow(QMainWindow):
         # Connect in background using QTimer to avoid blocking UI
         QTimer.singleShot(100, lambda: self._do_connection(v2ray_config, server_name))
     
-    def _do_connection(self, v2ray_config: dict, server_name: str) -> None:
+    def _do_connection(self, config: dict, server_name: str) -> None:
         """
         Perform actual connection in background.
-        
+
         Args:
-            v2ray_config: V2Ray configuration dictionary
+            config: Server configuration dictionary
             server_name: Name of server for display
         """
         print(f"\n🔌 Attempting to connect to: {server_name}")
-        
-        # Attempt to connect
-        success, error_message = self.v2ray_manager.connect(v2ray_config)
-        
+
+        server_type = config.get("type", "vmess")
+
+        if server_type == "hysteria2":
+            # Use Hysteria2 manager
+            success, error_message = self.hysteria2_manager.connect(config)
+            manager = self.hysteria2_manager
+        else:
+            # Use V2Ray manager
+            v2ray_config = config
+            success, error_message = self.v2ray_manager.connect(v2ray_config)
+            manager = self.v2ray_manager
+
         if success:
             print(f"✅ Successfully connected to {server_name}")
-            
+
             # Fetch public IP info in background
-            QTimer.singleShot(2000, lambda: self._fetch_ip_info(server_name))
-            
+            QTimer.singleShot(2000, lambda: self._fetch_ip_info(server_name, manager))
+
             # Update UI immediately
             self.servers_tab.set_connection_status(True, server_name, {})
-            
+
             # Show success toast
             self.show_toast(f"Connected to {server_name}", "success")
         else:
             print(f"❌ Failed to connect to {server_name}")
             print(f"Error: {error_message}")
-            
+
             # Show error dialog with details
             error_dialog = QMessageBox(self)
             error_dialog.setIcon(QMessageBox.Icon.Critical)
@@ -276,7 +285,7 @@ class MainWindow(QMainWindow):
             error_dialog.setDetailedText(error_message)
             error_dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
             error_dialog.exec()
-            
+
             # Show error toast
             self.show_toast("Failed to connect to server", "error")
             self.servers_tab.set_connection_status(False)
