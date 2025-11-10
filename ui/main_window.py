@@ -550,6 +550,9 @@ class MainWindow(QMainWindow):
             self.v2ray_manager.disconnect()
         if self.hysteria2_manager and self.hysteria2_manager.is_connected():
             self.hysteria2_manager.disconnect()
-        
+
+        # Restore system settings
+        self._restore_system_settings()
+
         # Accept the close event
         event.accept()
