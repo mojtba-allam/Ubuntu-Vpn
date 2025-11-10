@@ -19,6 +19,8 @@ from hysteria2_manager import Hysteria2Manager
 from subscription_manager import SubscriptionManager
 from server_updater import ServerUpdater
 from config_generator import generate_v2ray_config
+from system_proxy_manager import SystemProxyManager
+from tun_manager import TUNManager
 
 
 class ToastNotification(QWidget):
