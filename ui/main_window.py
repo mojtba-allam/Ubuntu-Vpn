@@ -307,13 +307,16 @@ class MainWindow(QMainWindow):
     
     def _on_disconnection_requested(self) -> None:
         """Handle disconnection request from servers tab."""
-        # Disconnect from V2Ray
-        success = self.v2ray_manager.disconnect()
-        
+        # Disconnect from both managers (only one will be active)
+        v2ray_success = self.v2ray_manager.disconnect()
+        hysteria2_success = self.hysteria2_manager.disconnect()
+
+        success = v2ray_success or hysteria2_success
+
         if success:
             # Update UI
             self.servers_tab.set_connection_status(False)
-            
+
             # Show success toast
             self.show_toast("Disconnected from server", "info")
         else:
