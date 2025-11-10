@@ -317,6 +317,109 @@ class MainWindow(QMainWindow):
         if ip_info:
             self.servers_tab.set_connection_status(True, server_name, ip_info)
     
+    def _configure_system_proxy(self, server_type: str) -> None:
+        """
+        Configure system proxy settings after connection.
+
+        Args:
+            server_type: Type of server connected to
+        """
+        try:
+            print("🔧 Configuring system proxy settings...")
+
+            # Check if system proxy manager is available
+            if not self.system_proxy_manager:
+                print("⚠️  System proxy manager not available")
+                return
+
+            # Check requirements
+            proxy_info = self.system_proxy_manager.get_proxy_info()
+            if not proxy_info['gnome_available']:
+                print("⚠️  GNOME not available - cannot configure system proxy automatically")
+                print("   Manual configuration may be required")
+                return
+
+            if not proxy_info['has_permissions']:
+                print("⚠️  Insufficient permissions to configure system proxy")
+                print("   Try: sudo chown $USER:$USER /etc/gconf")
+                return
+
+            # Configure system proxy based on server type
+            if server_type in ["vmess", "vless", "trojan", "hysteria2"]:
+                # Use SOCKS5 proxy (port 1080) and HTTP proxy (port 1081)
+                success = self.system_proxy_manager.configure_system_proxy(
+                    proxy_type='both',
+                    host='127.0.0.1',
+                    port=1081,  # HTTP proxy port
+                    socks_port=1080  # SOCKS proxy port
+                )
+
+                if success:
+                    print("✅ System proxy configured successfully")
+                    self.show_toast("System proxy configured", "success")
+                else:
+                    print("❌ Failed to configure system proxy")
+                    self.show_toast("Failed to configure system proxy", "error")
+
+        except Exception as e:
+            print(f"❌ Error configuring system proxy: {e}")
+            self.show_toast("Error configuring system proxy", "error")
+
+    def _configure_tun_mode(self, server_type: str) -> None:
+        """
+        Configure TUN mode if supported and requested.
+
+        Args:
+            server_type: Type of server connected to
+        """
+        try:
+            print("🔧 Checking TUN mode availability...")
+
+            # Check TUN requirements
+            tun_requirements = self.tun_manager.check_requirements()
+            print(f"TUN Requirements: {tun_requirements}")
+
+            if not tun_requirements['can_create_tun']:
+                if tun_requirements['root_required']:
+                    print("⚠️  TUN mode requires root privileges")
+                    print("   Try: sudo chown $USER:$USER /dev/net/tun")
+                    self.show_toast("TUN mode requires root privileges", "info")
+                else:
+                    missing = [k for k, v in tun_requirements.items() if not v and k != 'can_create_tun']
+                    print(f"⚠️  TUN mode not available: {', '.join(missing)}")
+                return
+
+            # Check if TUN mode should be enabled (could be a setting)
+            # For now, we'll ask the user via dialog
+            tun_question = QMessageBox.question(
+                self,
+                "Enable TUN Mode?",
+                "Enable TUN mode for system-wide VPN routing?\\n\\n"
+                "This will route all system traffic through the VPN.\\n"
+                "Requires appropriate permissions.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+
+            if tun_question == QMessageBox.StandardButton.Yes:
+                # Enable TUN mode with default DNS servers
+                dns_servers = ['8.8.8.8', '1.1.1.1', '208.67.222.222']  # Google, Cloudflare, OpenDNS
+                success = self.tun_manager.enable_tun_mode(dns_servers)
+
+                if success:
+                    print("✅ TUN mode enabled successfully")
+                    self.show_toast("TUN mode enabled - All traffic routed through VPN", "success")
+                else:
+                    print("❌ Failed to enable TUN mode")
+                    self.show_toast("Failed to enable TUN mode", "error")
+
+            else:
+                print("ℹ️  TUN mode declined by user - using proxy mode only")
+
+        except Exception as e:
+            print(f"❌ Error configuring TUN mode: {e}")
+            self.show_toast("Error configuring TUN mode", "error")
+
     def _on_disconnection_requested(self) -> None:
         """Handle disconnection request from servers tab."""
         # Disconnect from both managers (only one will be active)
@@ -326,6 +429,9 @@ class MainWindow(QMainWindow):
         success = v2ray_success or hysteria2_success
 
         if success:
+            # Restore system proxy settings
+            self._restore_system_settings()
+
             # Update UI
             self.servers_tab.set_connection_status(False)
 
