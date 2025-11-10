@@ -88,6 +88,10 @@ class MainWindow(QMainWindow):
         self.hysteria2_manager = Hysteria2Manager(config_dir)
         self.subscription_manager = SubscriptionManager(config_dir)
         self.server_updater = ServerUpdater(self.subscription_manager, interval=10)
+
+        # Initialize system managers
+        self.system_proxy_manager = SystemProxyManager(config_dir)
+        self.tun_manager = TUNManager(config_dir)
         
         # Setup window
         self.setWindowTitle("V2Ray Client")
