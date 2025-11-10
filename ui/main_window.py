@@ -440,7 +440,38 @@ class MainWindow(QMainWindow):
         else:
             # Show error toast
             self.show_toast("Failed to disconnect", "error")
-    
+
+    def _restore_system_settings(self) -> None:
+        """Restore system settings after disconnection"""
+        try:
+            print("🔄 Restoring system settings...")
+
+            # Restore system proxy settings
+            if hasattr(self, 'system_proxy_manager') and self.system_proxy_manager:
+                if self.system_proxy_manager.is_configured:
+                    success = self.system_proxy_manager.restore_original_settings()
+                    if success:
+                        print("✅ System proxy settings restored")
+                        self.show_toast("System proxy restored", "info")
+                    else:
+                        print("❌ Failed to restore system proxy")
+                        self.show_toast("Failed to restore system proxy", "error")
+
+            # Disable TUN mode
+            if hasattr(self, 'tun_manager') and self.tun_manager:
+                if self.tun_manager.is_active:
+                    success = self.tun_manager.disable_tun_mode()
+                    if success:
+                        print("✅ TUN mode disabled")
+                        self.show_toast("TUN mode disabled", "info")
+                    else:
+                        print("❌ Failed to disable TUN mode")
+                        self.show_toast("Failed to disable TUN mode", "error")
+
+        except Exception as e:
+            print(f"❌ Error restoring system settings: {e}")
+            self.show_toast("Error restoring system settings", "error")
+
     def _on_refresh_requested(self) -> None:
         """Handle manual refresh request from servers tab."""
         # Trigger immediate refresh
