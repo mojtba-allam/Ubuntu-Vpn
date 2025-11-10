@@ -1,0 +1,15 @@
+# Core GUI Framework
+PyQt6>=6.6.0
+
+# Network Requests
+requests>=2.31.0
+PySocks>=1.7.1  # For SOCKS proxy support in connection tests
+
+# Icon Processing
+cairosvg>=2.7.0
+pillow>=10.0.0
+
+# Testing Framework
+pytest>=7.4.0
+pytest-qt>=4.2.0
+pytest-cov>=4.1.0

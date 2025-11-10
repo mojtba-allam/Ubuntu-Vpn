@@ -1,0 +1,37 @@
+#!/bin/bash
+# postrm script for v2ray-client
+
+set -e
+
+case "$1" in
+    purge)
+        # Remove system-wide config template
+        rm -rf /usr/share/v2ray-client
+        
+        # Note: User data in ~/.config/v2ray-client is NOT removed
+        # Users must manually delete it if desired
+        
+        echo "V2Ray Client system files removed."
+        echo "User configuration in ~/.config/v2ray-client was preserved."
+        echo "To remove user data, run: rm -rf ~/.config/v2ray-client"
+        ;;
+        
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        # Update desktop database
+        if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database -q /usr/share/applications || true
+        fi
+        
+        # Update icon cache
+        if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+            gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
+        fi
+        ;;
+        
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

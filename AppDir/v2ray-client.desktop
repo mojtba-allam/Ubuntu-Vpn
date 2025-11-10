@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=V2Ray Client
+Comment=Modern V2Ray VPN Client for Ubuntu
+Exec=v2ray-client
+Icon=v2ray-client
+Terminal=false
+Categories=Network;VPN;
+StartupNotify=true
+Keywords=vpn;v2ray;proxy;network;

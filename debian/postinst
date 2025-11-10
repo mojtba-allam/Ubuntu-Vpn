@@ -1,0 +1,65 @@
+#!/bin/bash
+# postinst script for v2ray-client
+
+set -e
+
+case "$1" in
+    configure)
+        # Create system-wide config directory template
+        TEMPLATE_DIR="/usr/share/v2ray-client/config-template"
+        mkdir -p "$TEMPLATE_DIR"
+        
+        # Create default settings template
+        cat > "$TEMPLATE_DIR/settings.json" << 'EOF'
+{
+    "theme": "dark",
+    "refresh_interval": 10,
+    "auto_start": false,
+    "sort_by": "ping",
+    "subscriptions": [],
+    "last_connected_server": null
+}
+EOF
+        
+        # Create empty subscriptions template
+        echo "[]" > "$TEMPLATE_DIR/subscriptions.json"
+        
+        # Set proper permissions
+        chmod 644 "$TEMPLATE_DIR/settings.json"
+        chmod 644 "$TEMPLATE_DIR/subscriptions.json"
+        
+        # Update desktop database
+        if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database -q /usr/share/applications || true
+        fi
+        
+        # Update icon cache
+        if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+            gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
+        fi
+        
+        echo ""
+        echo "V2Ray Client has been installed successfully!"
+        echo ""
+        echo "IMPORTANT: V2Ray Core is required but not included in this package."
+        echo "To install V2Ray Core, run:"
+        echo "  sudo bash -c \"\$(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh)\""
+        echo ""
+        echo "After installing V2Ray Core, you can launch V2Ray Client from:"
+        echo "  - Application menu (search for 'V2Ray Client')"
+        echo "  - Command line: v2ray-client"
+        echo ""
+        echo "Configuration will be stored in: ~/.config/v2ray-client/"
+        echo ""
+        ;;
+        
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+        
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

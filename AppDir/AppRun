@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# AppRun script for V2Ray Client AppImage
+
+# Get the directory where this AppImage is mounted
+HERE="$(dirname "$(readlink -f "${0}")")"
+
+# Set up environment
+export PATH="${HERE}/usr/bin:${PATH}"
+export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
+export PYTHONPATH="${HERE}/usr/lib/python3/dist-packages:${PYTHONPATH}"
+export PYTHONHOME="${HERE}/usr"
+export QT_PLUGIN_PATH="${HERE}/usr/lib/qt6/plugins:${QT_PLUGIN_PATH}"
+export QT_QPA_PLATFORM_PLUGIN_PATH="${HERE}/usr/lib/qt6/plugins/platforms:${QT_QPA_PLATFORM_PLUGIN_PATH}"
+
+# Set up config directory in user's home
+export V2RAY_CLIENT_CONFIG="${HOME}/.config/v2ray-client"
+mkdir -p "${V2RAY_CLIENT_CONFIG}"
+
+# Create initial config files if they don't exist
+if [ ! -f "${V2RAY_CLIENT_CONFIG}/settings.json" ]; then
+    cat > "${V2RAY_CLIENT_CONFIG}/settings.json" << 'EOF'
+{
+    "theme": "dark",
+    "refresh_interval": 10,
+    "auto_start": false,
+    "sort_by": "ping",
+    "subscriptions": [],
+    "last_connected_server": null
+}
+EOF
+fi
+
+if [ ! -f "${V2RAY_CLIENT_CONFIG}/subscriptions.json" ]; then
+    echo "[]" > "${V2RAY_CLIENT_CONFIG}/subscriptions.json"
+fi
+
+# Create subdirectories
+mkdir -p "${V2RAY_CLIENT_CONFIG}/logs"
+mkdir -p "${V2RAY_CLIENT_CONFIG}/cache"
+
+# Check if V2Ray Core is installed
+if ! command -v v2ray &> /dev/null; then
+    # Show error dialog using zenity if available
+    if command -v zenity &> /dev/null; then
+        zenity --error --title="V2Ray Client" --text="V2Ray Core is not installed.\n\nPlease install V2Ray Core first:\nsudo bash -c \"\$(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh)\"\n\nOr install it from your distribution's package manager." --width=400
+    else
+        echo "Error: V2Ray Core is not installed."
+        echo "Please install V2Ray Core first:"
+        echo "  sudo bash -c \"\$(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh)\""
+    fi
+    exit 1
+fi
+
+# Run the application
+cd "${HERE}/usr/share/v2ray-client"
+exec "${HERE}/usr/bin/python3" main.py "$@"

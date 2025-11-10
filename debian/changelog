@@ -1,0 +1,15 @@
+v2ray-client (1.0.0) focal; urgency=medium
+
+  * Initial release
+  * Modern PyQt6-based GUI with three tabs (Servers, Settings, Logs)
+  * Support for multiple subscription URLs
+  * One-click server connection/disconnection
+  * Automatic server list updates with configurable intervals
+  * Server ping measurement and sorting
+  * Live V2Ray connection logs
+  * Multiple themes (Dark, Light, Neon)
+  * Country flags and server information display
+  * Public IP address display when connected
+  * Comprehensive automated testing suite
+
+ -- V2Ray Client Team <support@v2ray-client.local>  Mon, 10 Nov 2025 00:00:00 +0000

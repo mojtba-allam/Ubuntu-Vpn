@@ -1,0 +1,44 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+override_dh_auto_install:
+	# Install Python files
+	mkdir -p debian/v2ray-client/usr/share/v2ray-client
+	cp -r *.py ui tests debian/v2ray-client/usr/share/v2ray-client/
+	cp requirements.txt debian/v2ray-client/usr/share/v2ray-client/
+	
+	# Install executable wrapper
+	mkdir -p debian/v2ray-client/usr/bin
+	echo '#!/bin/bash' > debian/v2ray-client/usr/bin/v2ray-client
+	echo 'cd /usr/share/v2ray-client' >> debian/v2ray-client/usr/bin/v2ray-client
+	echo 'exec python3 main.py "$$@"' >> debian/v2ray-client/usr/bin/v2ray-client
+	chmod +x debian/v2ray-client/usr/bin/v2ray-client
+	
+	# Install desktop entry
+	mkdir -p debian/v2ray-client/usr/share/applications
+	echo '[Desktop Entry]' > debian/v2ray-client/usr/share/applications/v2ray-client.desktop
+	echo 'Version=1.0' >> debian/v2ray-client/usr/share/applications/v2ray-client.desktop
+	echo 'Type=Application' >> debian/v2ray-client/usr/share/applications/v2ray-client.desktop
+	echo 'Name=V2Ray Client' >> debian/v2ray-client/usr/share/applications/v2ray-client.desktop
+	echo 'Comment=Modern V2Ray VPN Client for Ubuntu' >> debian/v2ray-client/usr/share/applications/v2ray-client.desktop
+	echo 'Exec=v2ray-client' >> debian/v2ray-client/usr/share/applications/v2ray-client.desktop
+	echo 'Icon=network-vpn' >> debian/v2ray-client/usr/share/applications/v2ray-client.desktop
+	echo 'Terminal=false' >> debian/v2ray-client/usr/share/applications/v2ray-client.desktop
+	echo 'Categories=Network;VPN;' >> debian/v2ray-client/usr/share/applications/v2ray-client.desktop
+	echo 'StartupNotify=true' >> debian/v2ray-client/usr/share/applications/v2ray-client.desktop
+	echo 'Keywords=vpn;v2ray;proxy;network;' >> debian/v2ray-client/usr/share/applications/v2ray-client.desktop
+	
+	# Install icon if available
+	if [ -f ui/icons/app/v2ray-client.png ]; then \
+		mkdir -p debian/v2ray-client/usr/share/icons/hicolor/256x256/apps; \
+		cp ui/icons/app/v2ray-client.png debian/v2ray-client/usr/share/icons/hicolor/256x256/apps/; \
+	fi
+
+override_dh_auto_test:
+	# Skip tests during package build
+	# Tests can be run manually with: pytest tests/
+
+override_dh_python3:
+	dh_python3 --requires=requirements.txt

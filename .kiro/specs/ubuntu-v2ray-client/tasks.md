@@ -1,0 +1,266 @@
+# Implementation Plan
+
+- [x] 1. Set up project structure and dependencies
+  - Create directory structure for the project (main files, ui/, tests/)
+  - Create requirements.txt with PyQt6, requests, pytest dependencies
+  - Create install.sh script with system dependency installation and V2Ray Core setup
+  - _Requirements: 15.1, 15.2, 15.3, 15.4_
+
+- [x] 2. Implement V2Ray Connection Manager
+  - [x] 2.1 Create V2RayManager class with process lifecycle methods
+    - Implement `__init__` to set up config directory path
+    - Implement `connect()` method to save config and start V2Ray process
+    - Implement `disconnect()` method to terminate process and cleanup
+    - Implement `is_connected()` to check process status
+    - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.2, 4.3_
+  - [x] 2.2 Add public IP fetching functionality
+    - Implement `get_public_ip()` method using requests to ipinfo.io API
+    - Parse and return IP, country, and city information
+    - Handle network errors gracefully
+    - _Requirements: 3.4_
+  - [x] 2.3 Implement log streaming functionality
+    - Implement `get_logs()` to retrieve recent process output
+    - Implement `stream_logs()` with callback for real-time log updates
+    - Use threading for non-blocking log capture
+    - _Requirements: 7.2_
+  - [x] 2.4 Write unit tests for V2RayManager
+    - Test config file creation and deletion
+    - Test process start and stop with mocked subprocess
+    - Test public IP fetching with mocked requests
+    - Test log streaming functionality
+    - _Requirements: 12.1, 12.2, 12.3, 12.4_
+
+- [x] 3. Implement Subscription Manager
+  - [x] 3.1 Create SubscriptionManager class with URL management
+    - Implement `__init__` to load subscriptions from config file
+    - Implement `add_subscription()` to add new URLs
+    - Implement `remove_subscription()` to remove URLs
+    - Implement `get_subscriptions()` to retrieve subscription list
+    - _Requirements: 1.4_
+  - [x] 3.2 Implement subscription fetching and parsing
+    - Implement `fetch_subscription()` to download content from URL
+    - Add Base64 decoding for .v2ray format
+    - Implement `fetch_all_subscriptions()` to merge all sources
+    - Handle network errors and timeouts
+    - _Requirements: 1.1, 1.2, 1.5_
+  - [x] 3.3 Create ServerParser class for protocol parsing
+    - Implement `parse_vmess()` to decode vmess:// links
+    - Implement `parse_vless()` to parse vless:// links
+    - Implement `parse_trojan()` to parse trojan:// links
+    - Implement `deduplicate_servers()` to remove duplicates
+    - _Requirements: 1.1, 1.3_
+  - [x] 3.4 Write unit tests for subscription management
+    - Test URL addition and removal
+    - Test Base64 decoding with sample data
+    - Test vmess/vless/trojan parsing with mock links
+    - Test deduplication logic
+    - Test error handling for invalid URLs
+    - _Requirements: 13.1, 13.2, 13.3, 13.4_
+
+- [x] 4. Implement Server Updater
+  - [x] 4.1 Create ServerUpdater class with periodic refresh
+    - Implement `__init__` with QTimer for periodic updates
+    - Implement `start()` and `stop()` methods for updater control
+    - Implement `set_interval()` to change refresh frequency
+    - Implement `refresh_now()` for manual refresh trigger
+    - _Requirements: 2.1, 2.2, 2.4_
+  - [x] 4.2 Add server ping functionality
+    - Implement `ping_server()` using socket connection timing
+    - Implement `sort_servers()` to order by ping or name
+    - Handle unreachable servers gracefully
+    - _Requirements: 9.2, 9.3, 9.4_
+  - [x] 4.3 Write unit tests for server updater
+    - Test timer initialization and interval changes
+    - Test ping measurement with mock sockets
+    - Test server sorting logic
+    - Test refresh triggering
+    - _Requirements: 14.1, 14.3_
+
+- [x] 5. Create theme system
+  - [x] 5.1 Design and implement QSS stylesheets
+    - Create ui/themes/ directory
+    - Write dark.qss with dark color scheme
+    - Write light.qss with light color scheme
+    - Write neon.qss with gradient backgrounds and glow effects
+    - _Requirements: 5.3, 5.4, 5.5, 6.1_
+  - [x] 5.2 Implement theme loading mechanism
+    - Create theme loader function to read and apply QSS files
+    - Add theme validation and fallback to default
+    - Implement theme persistence in settings
+    - _Requirements: 6.2, 6.3_
+
+- [x] 6. Build GUI - Main Window
+  - [x] 6.1 Create MainWindow class with tab structure
+    - Implement `__init__` to set up QMainWindow
+    - Create QTabWidget with three tabs (Servers, Settings, Logs)
+    - Implement `load_theme()` method
+    - Implement `closeEvent()` for cleanup
+    - _Requirements: 5.1, 5.2_
+  - [x] 6.2 Add toast notification system
+    - Implement `show_toast()` method with floating widget
+    - Add animations for toast appearance and disappearance
+    - Support success, error, and info message types
+    - _Requirements: 10.1, 10.2_
+  - [x] 6.3 Wire up component initialization
+    - Initialize V2RayManager, SubscriptionManager, ServerUpdater
+    - Connect signals between components
+    - Load saved settings on startup
+    - _Requirements: 5.1_
+
+- [x] 7. Build GUI - Servers Tab
+  - [x] 7.1 Create ServerCard widget
+    - Implement `__init__` to display server information
+    - Add country flag icon display
+    - Add ping bar visualization
+    - Implement connect button with signal emission
+    - Add hover animations and styling
+    - _Requirements: 5.6, 5.7, 9.1, 9.2_
+  - [x] 7.2 Create ServersTab widget
+    - Implement `__init__` with scrollable grid layout
+    - Add search bar for filtering servers
+    - Add refresh button
+    - Implement `update_servers()` to refresh server cards
+    - Implement `set_connection_status()` to show active connection
+    - _Requirements: 5.2, 9.1, 9.3_
+  - [x] 7.3 Connect server actions to V2RayManager
+    - Connect ServerCard signals to connection handler
+    - Implement connection request handler
+    - Implement disconnection request handler
+    - Update UI based on connection status
+    - _Requirements: 3.1, 3.2, 3.3, 3.5, 4.1, 4.3_
+  - [x] 7.4 Add animated connection button
+    - Implement color transition animation (red to green)
+    - Add glow effect on hover
+    - Show loading spinner during connection
+    - _Requirements: 5.5, 10.3, 10.4_
+
+- [x] 8. Build GUI - Settings Tab
+  - [x] 8.1 Create SettingsTab widget
+    - Implement `__init__` with form layout
+    - Add subscription list display with edit/remove buttons
+    - Add refresh interval spinner
+    - Add theme selection radio buttons
+    - Add auto-start checkbox
+    - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+  - [x] 8.2 Implement subscription management dialogs
+    - Create add subscription dialog with URL input
+    - Create edit subscription dialog
+    - Implement subscription removal confirmation
+    - _Requirements: 1.4_
+  - [x] 8.3 Implement settings persistence
+    - Implement `save_settings()` to write to JSON file
+    - Implement `load_settings()` to read from JSON file
+    - Store settings in ~/.config/v2ray-client/settings.json
+    - _Requirements: 8.1, 6.3_
+  - [x] 8.4 Connect settings changes to application
+    - Connect theme selection to theme loader
+    - Connect interval change to ServerUpdater
+    - Connect subscription changes to SubscriptionManager
+    - _Requirements: 6.2, 2.2_
+
+- [x] 9. Build GUI - Logs Tab
+  - [x] 9.1 Create LogsTab widget
+    - Implement `__init__` with QTextEdit for log display
+    - Add clear logs button
+    - Add export logs button
+    - Implement auto-scroll to bottom
+    - _Requirements: 7.1, 7.3_
+  - [x] 9.2 Connect log streaming to V2RayManager
+    - Implement `append_log()` method
+    - Connect to V2RayManager log stream callback
+    - Implement log buffer limit (10,000 lines)
+    - _Requirements: 7.2_
+  - [x] 9.3 Implement log export functionality
+    - Implement `export_logs()` to save to file
+    - Add file dialog for export location
+    - _Requirements: 7.1_
+
+- [x] 10. Implement application entry point
+  - [x] 10.1 Create main.py with application initialization
+    - Set up QApplication
+    - Initialize MainWindow
+    - Load initial settings and theme
+    - Start ServerUpdater
+    - Show main window
+    - _Requirements: 5.1_
+  - [x] 10.2 Add command-line argument parsing
+    - Add --theme argument for initial theme
+    - Add --config argument for custom config directory
+    - Add --version argument
+    - _Requirements: 5.1_
+  - [x] 10.3 Implement graceful shutdown
+    - Stop ServerUpdater on exit
+    - Disconnect active V2Ray connection
+    - Save current settings
+    - _Requirements: 4.1, 4.2_
+
+- [x] 11. Create installation and packaging scripts
+  - [x] 11.1 Enhance install.sh script
+    - Add Ubuntu version check (20.04+)
+    - Add V2Ray Core installation verification
+    - Create desktop entry file
+    - Set up config directory with proper permissions
+    - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
+  - [x] 11.2 Create .deb package build script
+    - Create debian/ directory structure
+    - Write control file with dependencies
+    - Write postinst and prerm scripts
+    - Create build script to generate .deb
+    - _Requirements: 16.1, 16.3, 16.4_
+  - [x] 11.3 Create .AppImage build script
+    - Set up AppImage directory structure
+    - Bundle Python interpreter and dependencies
+    - Create AppRun script
+    - Build AppImage using appimagetool
+    - _Requirements: 16.2, 16.3, 16.4_
+
+- [x] 12. Add application icons and assets
+  - [x] 12.1 Create or source application icons
+    - Create main application icon (PNG, SVG)
+    - Download country flag icons for server cards
+    - Create connection status icons (connected/disconnected)
+    - _Requirements: 5.6, 16.4_
+  - [x] 12.2 Organize assets in ui/icons/ directory
+    - Create subdirectories for flags, status, app icons
+    - Implement icon loading utility function
+    - Add fallback for missing icons
+    - _Requirements: 5.6_
+
+- [x] 13. Write integration tests
+  - Test main window launch and initialization
+  - Test tab navigation between Servers, Settings, Logs
+  - Test subscription addition updates server list
+  - Test connect button triggers V2RayManager
+  - Test disconnect button stops process
+  - Test theme change applies to UI
+  - Test settings persistence across restarts
+  - Test log display shows V2Ray output
+  - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7_
+
+- [x] 14. Write network integration tests
+  - Test fetching from real subscription URL (use test URL)
+  - Test ipinfo.io API reachability
+  - Test ping measurement accuracy
+  - Test handling of network timeouts
+  - Test subscription refresh on interval
+  - _Requirements: 14.2, 14.4_
+
+- [x] 15. Create documentation
+  - [x] 15.1 Write comprehensive README.md
+    - Add project overview and features
+    - Add installation instructions
+    - Add usage guide with screenshots
+    - Add troubleshooting section
+    - Add contribution guidelines
+    - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
+  - [x] 15.2 Create user guide documentation
+    - Document subscription management
+    - Document connection process
+    - Document settings configuration
+    - Add FAQ section
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.1, 3.2, 3.3, 3.4, 3.5_
+  - [x] 15.3 Add code documentation
+    - Add docstrings to all classes and methods
+    - Add inline comments for complex logic
+    - Generate API documentation with Sphinx
+    - _Requirements: All_

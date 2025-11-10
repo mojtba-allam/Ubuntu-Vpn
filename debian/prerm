@@ -1,0 +1,29 @@
+#!/bin/bash
+# prerm script for v2ray-client
+
+set -e
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        # Stop any running V2Ray processes started by this user
+        # Note: We only clean up processes, not user data
+        
+        # Kill any v2ray-client processes
+        pkill -f "python3.*v2ray-client" || true
+        
+        # Wait a moment for graceful shutdown
+        sleep 1
+        
+        echo "V2Ray Client processes stopped."
+        ;;
+        
+    failed-upgrade)
+        ;;
+        
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

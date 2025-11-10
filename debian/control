@@ -1,0 +1,32 @@
+Source: v2ray-client
+Section: net
+Priority: optional
+Maintainer: V2Ray Client Team <support@v2ray-client.local>
+Build-Depends: debhelper (>= 10), python3 (>= 3.8), dh-python
+Standards-Version: 4.5.0
+Homepage: https://github.com/v2ray-client/ubuntu-client
+
+Package: v2ray-client
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends},
+         python3 (>= 3.8),
+         python3-pyqt6,
+         python3-requests,
+         curl,
+         wget
+Recommends: v2ray
+Description: Modern V2Ray VPN Client for Ubuntu
+ A modern, user-friendly V2Ray client application for Ubuntu with a
+ colorful graphical interface built using PyQt6.
+ .
+ Features:
+  - Manage multiple subscription URLs
+  - One-click server connection
+  - Automatic server list updates
+  - Live connection logs
+  - Multiple visual themes (Dark, Light, Neon)
+  - Server ping measurement
+  - Country flags and server information display
+ .
+ This package provides the client application. V2Ray Core must be
+ installed separately for the application to function.
