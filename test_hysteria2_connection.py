@@ -147,7 +147,7 @@ def test_basic_functionality():
     hysteria2_url = "hysteria2://YwuvGJk36B@81.168.83.89:2083?sni=kotlet.arshiacomplus.dpdns.org&obfs=salamander&obfs-password=khameniiko%40smad%40ret&insecure=1#%40Daily_Configs"
 
     try:
-        config = manager.parse_hysteria2_url(hysteria_url)
+        config = manager.parse_hysteria2_url(hysteria2_url)
         print("\n✅ URL parsing successful:")
         for key, value in config.items():
             print(f"   {key}: {value}")
