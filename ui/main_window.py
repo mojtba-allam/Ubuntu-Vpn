@@ -396,9 +396,11 @@ class MainWindow(QMainWindow):
         if self.server_updater:
             self.server_updater.stop()
         
-        # Disconnect V2Ray if connected
+        # Disconnect from both managers if connected
         if self.v2ray_manager and self.v2ray_manager.is_connected():
             self.v2ray_manager.disconnect()
+        if self.hysteria2_manager and self.hysteria2_manager.is_connected():
+            self.hysteria2_manager.disconnect()
         
         # Accept the close event
         event.accept()
