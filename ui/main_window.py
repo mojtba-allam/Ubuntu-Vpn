@@ -83,6 +83,7 @@ class MainWindow(QMainWindow):
         
         # Initialize managers
         self.v2ray_manager = V2RayManager(config_dir)
+        self.hysteria2_manager = Hysteria2Manager(config_dir)
         self.subscription_manager = SubscriptionManager(config_dir)
         self.server_updater = ServerUpdater(self.subscription_manager, interval=10)
         
