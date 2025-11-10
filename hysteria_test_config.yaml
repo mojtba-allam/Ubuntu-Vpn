@@ -1,0 +1,19 @@
+# Hysteria2 Configuration for Testing
+server: 81.168.83.89:2083
+
+auth: YwuvGJk36B
+
+bandwidth: 
+  up: 50 mbps
+  down: 50 mbps
+
+obfs: salamander:khameniiko@smad@ret
+
+sni: kotlet.arshiacomplus.dpdns.org
+insecure: true
+
+socks5:
+  listen: 127.0.0.1:1080
+
+http:
+  listen: 127.0.0.1:1081
