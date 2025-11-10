@@ -290,14 +290,18 @@ class MainWindow(QMainWindow):
             self.show_toast("Failed to connect to server", "error")
             self.servers_tab.set_connection_status(False)
     
-    def _fetch_ip_info(self, server_name: str) -> None:
+    def _fetch_ip_info(self, server_name: str, manager=None) -> None:
         """
         Fetch IP info after connection is established.
-        
+
         Args:
             server_name: Name of connected server
+            manager: The manager that handles the connection (V2Ray or Hysteria2)
         """
-        ip_info = self.v2ray_manager.get_public_ip()
+        if manager is None:
+            manager = self.v2ray_manager
+
+        ip_info = manager.get_public_ip()
         if ip_info:
             self.servers_tab.set_connection_status(True, server_name, ip_info)
     
