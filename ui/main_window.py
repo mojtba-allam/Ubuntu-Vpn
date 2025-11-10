@@ -15,6 +15,7 @@ from ui.servers_tab import ServersTab
 from ui.settings_tab import SettingsTab
 from ui.logs_tab import LogsTab
 from v2ray_manager import V2RayManager
+from hysteria2_manager import Hysteria2Manager
 from subscription_manager import SubscriptionManager
 from server_updater import ServerUpdater
 from config_generator import generate_v2ray_config
