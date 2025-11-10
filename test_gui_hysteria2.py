@@ -52,7 +52,7 @@ def test_gui_with_hysteria2():
     hysteria2_url = "hysteria2://YwuvGJk36B@81.168.83.89:2083?sni=kotlet.arshiacomplus.dpdns.org&obfs=salamander&obfs-password=khameniiko%40smad%40ret&insecure=1#%40Daily_Configs"
 
     try:
-        server_config = window.hysteria2_manager.parse_hysteria2_url(hysteria_url)
+        server_config = window.hysteria2_manager.parse_hysteria2_url(hysteria2_url)
         print("✅ Hysteria2 server config parsed successfully")
         print(f"   Name: {server_config['name']}")
         print(f"   Server: {server_config['server']}:{server_config['port']}")
