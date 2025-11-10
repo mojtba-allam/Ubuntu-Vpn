@@ -271,6 +271,12 @@ class MainWindow(QMainWindow):
         if success:
             print(f"✅ Successfully connected to {server_name}")
 
+            # Configure system proxy if available
+            self._configure_system_proxy(server_type)
+
+            # Configure TUN mode if requested and available
+            self._configure_tun_mode(server_type)
+
             # Fetch public IP info in background
             QTimer.singleShot(2000, lambda: self._fetch_ip_info(server_name, manager))
 
