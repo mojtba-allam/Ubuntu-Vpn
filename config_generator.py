@@ -11,21 +11,29 @@ from system_proxy_detector import get_system_proxy, add_system_proxy_to_config
 def generate_v2ray_config(server: Dict, use_system_proxy: bool = True) -> Dict:
     """
     Generate V2Ray configuration from server information.
-    
+
     Args:
         server: Server configuration dictionary
-        
+
     Returns:
         V2Ray configuration dictionary
     """
     server_type = server.get("type", "vmess")
-    
-    print(f"\n⚙️  Generating V2Ray config for {server_type.upper()} server")
+
+    print(f"\n⚙️  Generating config for {server_type.upper()} server")
     print(f"   Server: {server.get('name', 'Unknown')}")
-    print(f"   Address: {server.get('ip', 'Unknown')}:{server.get('port', 'Unknown')}")
-    print(f"   Network: {server.get('network', 'tcp')}")
-    print(f"   TLS: {server.get('tls', False)}")
-    
+
+    if server_type == "hysteria2":
+        # For Hysteria2, return server config as-is for Hysteria2Manager
+        print(f"   Address: {server.get('server', 'Unknown')}:{server.get('port', 'Unknown')}")
+        print(f"   Type: Hysteria2 with obfuscation")
+        print("✅ Hysteria2 config prepared")
+        return server
+    else:
+        print(f"   Address: {server.get('ip', 'Unknown')}:{server.get('port', 'Unknown')}")
+        print(f"   Network: {server.get('network', 'tcp')}")
+        print(f"   TLS: {server.get('tls', False)}")
+
     if server_type == "vmess":
         config = generate_vmess_config(server)
     elif server_type == "vless":
@@ -36,9 +44,9 @@ def generate_v2ray_config(server: Dict, use_system_proxy: bool = True) -> Dict:
         error_msg = f"Unsupported server type: {server_type}"
         print(f"❌ ERROR: {error_msg}")
         raise ValueError(error_msg)
-    
+
     print("✅ Config generated successfully")
-    
+
     # Add system proxy if requested and available
     if use_system_proxy:
         system_proxy = get_system_proxy()
@@ -46,7 +54,7 @@ def generate_v2ray_config(server: Dict, use_system_proxy: bool = True) -> Dict:
             config = add_system_proxy_to_config(config, system_proxy)
         else:
             print("ℹ️  No system proxy found - connecting directly")
-    
+
     return config
 
 

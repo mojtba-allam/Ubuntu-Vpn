@@ -15,9 +15,12 @@ from ui.servers_tab import ServersTab
 from ui.settings_tab import SettingsTab
 from ui.logs_tab import LogsTab
 from v2ray_manager import V2RayManager
+from hysteria2_manager import Hysteria2Manager
 from subscription_manager import SubscriptionManager
 from server_updater import ServerUpdater
 from config_generator import generate_v2ray_config
+from system_proxy_manager import SystemProxyManager
+from tun_manager import TUNManager
 
 
 class ToastNotification(QWidget):
@@ -82,8 +85,13 @@ class MainWindow(QMainWindow):
         
         # Initialize managers
         self.v2ray_manager = V2RayManager(config_dir)
+        self.hysteria2_manager = Hysteria2Manager(config_dir)
         self.subscription_manager = SubscriptionManager(config_dir)
         self.server_updater = ServerUpdater(self.subscription_manager, interval=10)
+
+        # Initialize system managers
+        self.system_proxy_manager = SystemProxyManager(config_dir)
+        self.tun_manager = TUNManager(config_dir)
         
         # Setup window
         self.setWindowTitle("V2Ray Client")
@@ -238,34 +246,49 @@ class MainWindow(QMainWindow):
         # Connect in background using QTimer to avoid blocking UI
         QTimer.singleShot(100, lambda: self._do_connection(v2ray_config, server_name))
     
-    def _do_connection(self, v2ray_config: dict, server_name: str) -> None:
+    def _do_connection(self, config: dict, server_name: str) -> None:
         """
         Perform actual connection in background.
-        
+
         Args:
-            v2ray_config: V2Ray configuration dictionary
+            config: Server configuration dictionary
             server_name: Name of server for display
         """
         print(f"\n🔌 Attempting to connect to: {server_name}")
-        
-        # Attempt to connect
-        success, error_message = self.v2ray_manager.connect(v2ray_config)
-        
+
+        server_type = config.get("type", "vmess")
+
+        if server_type == "hysteria2":
+            # Use Hysteria2 manager
+            success, error_message = self.hysteria2_manager.connect(config)
+            manager = self.hysteria2_manager
+        else:
+            # Use V2Ray manager
+            v2ray_config = config
+            success, error_message = self.v2ray_manager.connect(v2ray_config)
+            manager = self.v2ray_manager
+
         if success:
             print(f"✅ Successfully connected to {server_name}")
-            
+
+            # Configure system proxy if available
+            self._configure_system_proxy(server_type)
+
+            # Configure TUN mode if requested and available
+            self._configure_tun_mode(server_type)
+
             # Fetch public IP info in background
-            QTimer.singleShot(2000, lambda: self._fetch_ip_info(server_name))
-            
+            QTimer.singleShot(2000, lambda: self._fetch_ip_info(server_name, manager))
+
             # Update UI immediately
             self.servers_tab.set_connection_status(True, server_name, {})
-            
+
             # Show success toast
             self.show_toast(f"Connected to {server_name}", "success")
         else:
             print(f"❌ Failed to connect to {server_name}")
             print(f"Error: {error_message}")
-            
+
             # Show error dialog with details
             error_dialog = QMessageBox(self)
             error_dialog.setIcon(QMessageBox.Icon.Critical)
@@ -274,37 +297,181 @@ class MainWindow(QMainWindow):
             error_dialog.setDetailedText(error_message)
             error_dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
             error_dialog.exec()
-            
+
             # Show error toast
             self.show_toast("Failed to connect to server", "error")
             self.servers_tab.set_connection_status(False)
     
-    def _fetch_ip_info(self, server_name: str) -> None:
+    def _fetch_ip_info(self, server_name: str, manager=None) -> None:
         """
         Fetch IP info after connection is established.
-        
+
         Args:
             server_name: Name of connected server
+            manager: The manager that handles the connection (V2Ray or Hysteria2)
         """
-        ip_info = self.v2ray_manager.get_public_ip()
+        if manager is None:
+            manager = self.v2ray_manager
+
+        ip_info = manager.get_public_ip()
         if ip_info:
             self.servers_tab.set_connection_status(True, server_name, ip_info)
     
+    def _configure_system_proxy(self, server_type: str) -> None:
+        """
+        Configure system proxy settings after connection.
+
+        Args:
+            server_type: Type of server connected to
+        """
+        try:
+            print("🔧 Configuring system proxy settings...")
+
+            # Check if system proxy manager is available
+            if not self.system_proxy_manager:
+                print("⚠️  System proxy manager not available")
+                return
+
+            # Check requirements
+            proxy_info = self.system_proxy_manager.get_proxy_info()
+            if not proxy_info['gnome_available']:
+                print("⚠️  GNOME not available - cannot configure system proxy automatically")
+                print("   Manual configuration may be required")
+                return
+
+            if not proxy_info['has_permissions']:
+                print("⚠️  Insufficient permissions to configure system proxy")
+                print("   Try: sudo chown $USER:$USER /etc/gconf")
+                return
+
+            # Configure system proxy based on server type
+            if server_type in ["vmess", "vless", "trojan", "hysteria2"]:
+                # Use SOCKS5 proxy (port 1080) and HTTP proxy (port 1081)
+                success = self.system_proxy_manager.configure_system_proxy(
+                    proxy_type='both',
+                    host='127.0.0.1',
+                    port=1081,  # HTTP proxy port
+                    socks_port=1080  # SOCKS proxy port
+                )
+
+                if success:
+                    print("✅ System proxy configured successfully")
+                    self.show_toast("System proxy configured", "success")
+                else:
+                    print("❌ Failed to configure system proxy")
+                    self.show_toast("Failed to configure system proxy", "error")
+
+        except Exception as e:
+            print(f"❌ Error configuring system proxy: {e}")
+            self.show_toast("Error configuring system proxy", "error")
+
+    def _configure_tun_mode(self, server_type: str) -> None:
+        """
+        Configure TUN mode if supported and requested.
+
+        Args:
+            server_type: Type of server connected to
+        """
+        try:
+            print("🔧 Checking TUN mode availability...")
+
+            # Check TUN requirements
+            tun_requirements = self.tun_manager.check_requirements()
+            print(f"TUN Requirements: {tun_requirements}")
+
+            if not tun_requirements['can_create_tun']:
+                if tun_requirements['root_required']:
+                    print("⚠️  TUN mode requires root privileges")
+                    print("   Try: sudo chown $USER:$USER /dev/net/tun")
+                    self.show_toast("TUN mode requires root privileges", "info")
+                else:
+                    missing = [k for k, v in tun_requirements.items() if not v and k != 'can_create_tun']
+                    print(f"⚠️  TUN mode not available: {', '.join(missing)}")
+                return
+
+            # Check if TUN mode should be enabled (could be a setting)
+            # For now, we'll ask the user via dialog
+            tun_question = QMessageBox.question(
+                self,
+                "Enable TUN Mode?",
+                "Enable TUN mode for system-wide VPN routing?\\n\\n"
+                "This will route all system traffic through the VPN.\\n"
+                "Requires appropriate permissions.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+
+            if tun_question == QMessageBox.StandardButton.Yes:
+                # Enable TUN mode with default DNS servers
+                dns_servers = ['8.8.8.8', '1.1.1.1', '208.67.222.222']  # Google, Cloudflare, OpenDNS
+                success = self.tun_manager.enable_tun_mode(dns_servers)
+
+                if success:
+                    print("✅ TUN mode enabled successfully")
+                    self.show_toast("TUN mode enabled - All traffic routed through VPN", "success")
+                else:
+                    print("❌ Failed to enable TUN mode")
+                    self.show_toast("Failed to enable TUN mode", "error")
+
+            else:
+                print("ℹ️  TUN mode declined by user - using proxy mode only")
+
+        except Exception as e:
+            print(f"❌ Error configuring TUN mode: {e}")
+            self.show_toast("Error configuring TUN mode", "error")
+
     def _on_disconnection_requested(self) -> None:
         """Handle disconnection request from servers tab."""
-        # Disconnect from V2Ray
-        success = self.v2ray_manager.disconnect()
-        
+        # Disconnect from both managers (only one will be active)
+        v2ray_success = self.v2ray_manager.disconnect()
+        hysteria2_success = self.hysteria2_manager.disconnect()
+
+        success = v2ray_success or hysteria2_success
+
         if success:
+            # Restore system proxy settings
+            self._restore_system_settings()
+
             # Update UI
             self.servers_tab.set_connection_status(False)
-            
+
             # Show success toast
             self.show_toast("Disconnected from server", "info")
         else:
             # Show error toast
             self.show_toast("Failed to disconnect", "error")
-    
+
+    def _restore_system_settings(self) -> None:
+        """Restore system settings after disconnection"""
+        try:
+            print("🔄 Restoring system settings...")
+
+            # Restore system proxy settings
+            if hasattr(self, 'system_proxy_manager') and self.system_proxy_manager:
+                if self.system_proxy_manager.is_configured:
+                    success = self.system_proxy_manager.restore_original_settings()
+                    if success:
+                        print("✅ System proxy settings restored")
+                        self.show_toast("System proxy restored", "info")
+                    else:
+                        print("❌ Failed to restore system proxy")
+                        self.show_toast("Failed to restore system proxy", "error")
+
+            # Disable TUN mode
+            if hasattr(self, 'tun_manager') and self.tun_manager:
+                if self.tun_manager.is_active:
+                    success = self.tun_manager.disable_tun_mode()
+                    if success:
+                        print("✅ TUN mode disabled")
+                        self.show_toast("TUN mode disabled", "info")
+                    else:
+                        print("❌ Failed to disable TUN mode")
+                        self.show_toast("Failed to disable TUN mode", "error")
+
+        except Exception as e:
+            print(f"❌ Error restoring system settings: {e}")
+            self.show_toast("Error restoring system settings", "error")
+
     def _on_refresh_requested(self) -> None:
         """Handle manual refresh request from servers tab."""
         # Trigger immediate refresh
@@ -378,9 +545,14 @@ class MainWindow(QMainWindow):
         if self.server_updater:
             self.server_updater.stop()
         
-        # Disconnect V2Ray if connected
+        # Disconnect from both managers if connected
         if self.v2ray_manager and self.v2ray_manager.is_connected():
             self.v2ray_manager.disconnect()
-        
+        if self.hysteria2_manager and self.hysteria2_manager.is_connected():
+            self.hysteria2_manager.disconnect()
+
+        # Restore system settings
+        self._restore_system_settings()
+
         # Accept the close event
         event.accept()
